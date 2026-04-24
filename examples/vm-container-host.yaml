@@ -1,0 +1,115 @@
+# VM / Container Host Example
+# Demonstrates expressing a physical server as a subgraph and placing
+# VM/container workloads inside it using subgraph membership.
+
+name: "VM and Container Host"
+description: "One physical host running Management/App/DB VMs, with containers inside App VM"
+
+settings:
+  direction: TB
+  theme: light
+  legend: true
+
+subgraphs:
+  - id: srv-host-01
+    label: "Server Host 01"
+    type: server
+    vendor: hpe
+    model: proliant-dl360
+    style:
+      fill: "surface-2"
+      stroke: "#475569"
+      strokeWidth: 2
+      padding: 24
+
+  - id: vm-management-01
+    label: "Management VM"
+    parent: srv-host-01
+    type: vm
+    platform: kvm
+    style:
+      fill: "surface-1"
+      stroke: "#0d9488"
+      strokeWidth: 3
+      padding: 18
+
+  - id: vm-app-01-runtime
+    label: "App VM (Container Host)"
+    parent: srv-host-01
+    type: vm
+    platform: kvm
+    style:
+      fill: "surface-1"
+      stroke: "#2563eb"
+      strokeWidth: 3
+      strokeDasharray: ""
+      padding: 20
+
+  - id: vm-db-service-01
+    label: "DB Service VM"
+    parent: srv-host-01
+    type: vm
+    platform: kvm
+    style:
+      fill: "surface-1"
+      stroke: "#b45309"
+      strokeWidth: 3
+      padding: 20
+
+nodes:
+  - id: management-agent
+    label:
+      - "<b>Management Agent</b>"
+      - "control plane"
+    type: vm
+    parent: vm-management-01
+    rank: 0
+
+  - id: ctr-nginx-01
+    label:
+      - "<b>Nginx</b>"
+      - "frontend"
+    type: container
+    parent: vm-app-01-runtime
+    platform: docker
+    style:
+      stroke: "#4338ca"
+      strokeDasharray: "5 3"
+    rank: 2
+
+  - id: ctr-api-01
+    label:
+      - "<b>API</b>"
+      - "backend"
+    type: container
+    parent: vm-app-01-runtime
+    platform: docker
+    style:
+      stroke: "#4338ca"
+      strokeDasharray: "5 3"
+    rank: 2
+
+  - id: db-service
+    label:
+      - "<b>DB Service</b>"
+      - "managed"
+    type: database
+    parent: vm-db-service-01
+    rank: 1
+
+links:
+  - from: management-agent
+    to: ctr-nginx-01
+    type: solid
+    arrow: none
+    label: "managed workload"
+
+  - from: management-agent
+    to: ctr-api-01
+    type: solid
+    arrow: none
+    label: "managed workload"
+
+  - from: ctr-api-01
+    to: db-service
+    bandwidth: 1G

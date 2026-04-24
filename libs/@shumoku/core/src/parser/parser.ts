@@ -32,6 +32,8 @@ enum DeviceType {
   Firewall = 'firewall',
   LoadBalancer = 'load-balancer',
   Server = 'server',
+  VM = 'vm',
+  Container = 'container',
   AccessPoint = 'access-point',
   CPE = 'cpe',
   Cloud = 'cloud',
@@ -71,6 +73,8 @@ interface YamlNode {
   service?: string
   /** Model name for hardware vendors (e.g., 'rtx3510', 'ex4400') */
   model?: string
+  /** Platform identifier for compute nodes (e.g., 'kvm', 'docker', 'containerd') */
+  platform?: string
   /** Resource type within the service (e.g., 'instance', 'nat-gateway') */
   resource?: string
   /** Custom icon URL (overrides vendor/type icons) */
@@ -137,12 +141,15 @@ interface YamlSubgraph {
   parent?: string
   direction?: string
   style?: YamlSubgraphStyle
+  type?: string
   /** Vendor name for vendor-specific icons (e.g., 'aws', 'azure', 'gcp', 'yamaha') */
   vendor?: string
   /** Service name within the vendor (e.g., 'ec2', 'vpc', 'lambda') */
   service?: string
   /** Model name for hardware vendors (e.g., 'rtx3510', 'ex4400') */
   model?: string
+  /** Platform identifier for compute containers (e.g., 'kvm', 'docker') */
+  platform?: string
   /** Resource type within the service (e.g., 'instance', 'nat-gateway') */
   resource?: string
   /** Custom icon URL (overrides vendor/type icons) */
@@ -171,15 +178,15 @@ interface YamlGraphSettings {
   subgraphPadding?: number
   canvas?: YamlCanvasSettings
   legend?:
-    | boolean
-    | {
-        enabled?: boolean
-        position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
-        showDeviceTypes?: boolean
-        showBandwidth?: boolean
-        showCableTypes?: boolean
-        showVlans?: boolean
-      }
+  | boolean
+  | {
+    enabled?: boolean
+    position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+    showDeviceTypes?: boolean
+    showBandwidth?: boolean
+    showCableTypes?: boolean
+    showVlans?: boolean
+  }
 }
 
 interface YamlNetworkV2 {
@@ -276,15 +283,15 @@ export class YamlParser {
         rank: n.rank,
         style: n.style
           ? {
-              fill: n.style.fill,
-              stroke: n.style.stroke,
-              strokeWidth: n.style.strokeWidth,
-              strokeDasharray: n.style.strokeDasharray,
-              textColor: n.style.textColor,
-              fontSize: n.style.fontSize,
-              fontWeight: n.style.fontWeight as 'normal' | 'bold' | undefined,
-              opacity: n.style.opacity,
-            }
+            fill: n.style.fill,
+            stroke: n.style.stroke,
+            strokeWidth: n.style.strokeWidth,
+            strokeDasharray: n.style.strokeDasharray,
+            textColor: n.style.textColor,
+            fontSize: n.style.fontSize,
+            fontWeight: n.style.fontWeight as 'normal' | 'bold' | undefined,
+            opacity: n.style.opacity,
+          }
           : undefined,
         metadata: n.metadata,
         spec: this.buildNodeSpec(n),
@@ -305,12 +312,12 @@ export class YamlParser {
       vlan: this.parseVlan(l.vlan),
       style: l.style
         ? {
-            stroke: l.style.stroke,
-            strokeWidth: l.style.strokeWidth,
-            strokeDasharray: l.style.strokeDasharray,
-            opacity: l.style.opacity,
-            minLength: l.style.minLength,
-          }
+          stroke: l.style.stroke,
+          strokeWidth: l.style.strokeWidth,
+          strokeDasharray: l.style.strokeDasharray,
+          opacity: l.style.opacity,
+          minLength: l.style.minLength,
+        }
         : undefined,
     }))
   }
@@ -425,21 +432,21 @@ export class YamlParser {
         direction: this.parseDirection(s.direction),
         style: s.style
           ? {
-              fill: s.style.fill,
-              stroke: s.style.stroke,
-              strokeWidth: s.style.strokeWidth,
-              strokeDasharray: s.style.strokeDasharray,
-              labelPosition: s.style.labelPosition as
-                | 'top'
-                | 'bottom'
-                | 'left'
-                | 'right'
-                | undefined,
-              labelFontSize: s.style.labelFontSize,
-              padding: s.style.padding,
-              nodeSpacing: s.style.nodeSpacing,
-              rankSpacing: s.style.rankSpacing,
-            }
+            fill: s.style.fill,
+            stroke: s.style.stroke,
+            strokeWidth: s.style.strokeWidth,
+            strokeDasharray: s.style.strokeDasharray,
+            labelPosition: s.style.labelPosition as
+              | 'top'
+              | 'bottom'
+              | 'left'
+              | 'right'
+              | undefined,
+            labelFontSize: s.style.labelFontSize,
+            padding: s.style.padding,
+            nodeSpacing: s.style.nodeSpacing,
+            rankSpacing: s.style.rankSpacing,
+          }
           : undefined,
         spec: this.buildSubgraphSpec(s),
         file: s.file,
@@ -468,9 +475,21 @@ export class YamlParser {
       }
     }
 
+    const parsedType = this.parseDeviceType(n.type)
+
+    if (parsedType === DeviceType.VM || parsedType === DeviceType.Container) {
+      return {
+        kind: 'compute' as const,
+        type: parsedType,
+        vendor: n.vendor?.toLowerCase(),
+        platform: (n.platform || n.model)?.toLowerCase(),
+        icon: n.icon,
+      }
+    }
+
     return {
       kind: 'hardware' as const,
-      type: this.parseDeviceType(n.type),
+      type: parsedType,
       vendor: n.vendor?.toLowerCase(),
       model: n.model?.toLowerCase(),
       icon: n.icon,
@@ -480,10 +499,15 @@ export class YamlParser {
   // biome-ignore lint/suspicious/noExplicitAny: YAML input is untyped
   private buildSubgraphSpec(s: any): NodeSpec | undefined {
     const hasService = !!s.service
+    const hasType = !!s.type
     const hasVendor = !!s.vendor
+    const hasModel = !!s.model
+    const hasPlatform = !!s.platform
     const hasIcon = !!s.icon
 
-    if (!hasService && !hasVendor && !hasIcon) return undefined
+    if (!hasService && !hasType && !hasVendor && !hasModel && !hasPlatform && !hasIcon) {
+      return undefined
+    }
 
     if (hasService) {
       return {
@@ -495,8 +519,21 @@ export class YamlParser {
       }
     }
 
+    const parsedType = this.parseDeviceType(s.type)
+
+    if (parsedType === DeviceType.VM || parsedType === DeviceType.Container) {
+      return {
+        kind: 'compute' as const,
+        type: parsedType,
+        vendor: s.vendor?.toLowerCase(),
+        platform: (s.platform || s.model)?.toLowerCase(),
+        icon: s.icon,
+      }
+    }
+
     return {
       kind: 'hardware' as const,
+      type: parsedType,
       vendor: s.vendor?.toLowerCase(),
       model: s.model?.toLowerCase(),
       icon: s.icon,
@@ -622,6 +659,12 @@ export class YamlParser {
       'load-balancer': DeviceType.LoadBalancer,
       lb: DeviceType.LoadBalancer,
       server: DeviceType.Server,
+      vm: DeviceType.VM,
+      'virtual-machine': DeviceType.VM,
+      virtual_machine: DeviceType.VM,
+      container: DeviceType.Container,
+      docker: DeviceType.Container,
+      pod: DeviceType.Container,
       'access-point': DeviceType.AccessPoint,
       ap: DeviceType.AccessPoint,
       cpe: DeviceType.CPE,

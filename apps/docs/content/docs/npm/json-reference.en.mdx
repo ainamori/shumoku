@@ -74,6 +74,7 @@ Define devices on the network (routers, switches, servers, etc.).
 | `model` | string | | Device model name |
 | `service` | string | | Service name (AWS, etc.) |
 | `resource` | string | | Resource type |
+| `platform` | string | | Compute platform (for `vm`/`container`) |
 | `parent` | string | | Subgraph ID to belong to |
 | `rank` | number \| string | | Layer specification (same value for horizontal alignment) |
 | `shape` | string | | Shape (rect, rounded, circle, etc.) |
@@ -90,6 +91,8 @@ Define devices on the network (routers, switches, servers, etc.).
 | `firewall` | Firewall |
 | `load-balancer` | Load Balancer |
 | `server` | Server |
+| `vm` | Virtual Machine |
+| `container` | Container |
 | `access-point` | Access Point |
 | `cloud` | Cloud |
 | `internet` | Internet |

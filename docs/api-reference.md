@@ -153,6 +153,8 @@ enum DeviceType {
   Firewall = 'firewall',
   LoadBalancer = 'load-balancer',
   Server = 'server',
+  VM = 'vm',
+  Container = 'container',
   AccessPoint = 'access-point',
   Cloud = 'cloud',
   Internet = 'internet',

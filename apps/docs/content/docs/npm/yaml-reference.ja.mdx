@@ -164,12 +164,36 @@ label:
 | `firewall` | `fw` | ファイアウォール |
 | `load-balancer` | `lb` | ロードバランサー |
 | `server` | - | サーバー |
+| `vm` | `virtual-machine`, `virtual_machine` | 仮想マシン |
+| `container` | `docker`, `pod` | コンテナ |
 | `access-point` | `ap` | アクセスポイント |
 | `cloud` | - | クラウド |
 | `internet` | - | インターネット |
 | `vpn` | - | VPN |
 | `database` | `db` | データベース |
 | `generic` | - | 汎用 |
+
+### Server 内部に VM / Container を表現する
+ノードを直接ノード内にネストするのではなく、Server をサブグラフとして定義し、その `parent` に VM/Container ノードをぶら下げます。
+
+```yaml
+subgraphs:
+  - id: srv-host-01
+    label: "Server Host 01"
+
+nodes:
+  - id: vm-app-01
+    label: "App VM"
+    type: vm
+    parent: srv-host-01
+    platform: kvm
+
+  - id: ctr-nginx-01
+    label: "Nginx"
+    type: container
+    parent: srv-host-01
+    platform: docker
+```
 
 ### shape (ノード形状)
 | 値 | エイリアス | 説明 |

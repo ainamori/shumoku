@@ -74,6 +74,7 @@ Shumoku の JSON 形式は **中間フォーマット** として設計されて
 | `model` | string | | 機器モデル名 |
 | `service` | string | | サービス名（AWS等） |
 | `resource` | string | | リソースタイプ |
+| `platform` | string | | Compute プラットフォーム（`vm`/`container` 用） |
 | `parent` | string | | 所属する subgraph の ID |
 | `rank` | number \| string | | レイヤー指定（同じ値で水平配置） |
 | `shape` | string | | 形状（rect, rounded, circle 等） |
@@ -90,6 +91,8 @@ Shumoku の JSON 形式は **中間フォーマット** として設計されて
 | `firewall` | ファイアウォール |
 | `load-balancer` | ロードバランサー |
 | `server` | サーバー |
+| `vm` | 仮想マシン |
+| `container` | コンテナ |
 | `access-point` | アクセスポイント |
 | `cloud` | クラウド |
 | `internet` | インターネット |

@@ -53,13 +53,13 @@ import type { DataAttributeOptions, RenderMode } from './types.js'
 type CenterlineSegment =
   | { type: 'line'; from: { x: number; y: number }; to: { x: number; y: number } }
   | {
-      type: 'arc'
-      center: { x: number; y: number }
-      radius: number
-      t0: { x: number; y: number }
-      t1: { x: number; y: number }
-      sweepFlag: number
-    }
+    type: 'arc'
+    center: { x: number; y: number }
+    radius: number
+    t0: { x: number; y: number }
+    t1: { x: number; y: number }
+    sweepFlag: number
+  }
 
 interface RenderColors {
   backgroundColor: string
@@ -706,6 +706,11 @@ export class SVGRenderer {
       // dims not found = icon doesn't exist on CDN, skip icon
     }
 
+    const fallbackIconPath = hasIcon ? undefined : getDeviceIcon(specDeviceType(sgSpec))
+    if (!hasIcon && fallbackIconPath) {
+      hasIcon = true
+    }
+
     // Calculate icon position (top-left corner)
     const iconX = bounds.x + iconPadding
     const iconY = bounds.y + iconPadding
@@ -726,6 +731,10 @@ export class SVGRenderer {
       iconSvg = `<g class="subgraph-icon" transform="translate(${iconX}, ${iconY})">
     <image href="${iconUrl}" width="${iconWidth}" height="${iconHeight}" preserveAspectRatio="xMidYMid meet" />
   </g>`
+    } else if (fallbackIconPath) {
+      iconSvg = `<g class="subgraph-icon" transform="translate(${iconX}, ${iconY})" fill="currentColor">
+    <svg width="${defaultIconSize}" height="${defaultIconSize}" viewBox="0 0 24 24" fill="currentColor">${fallbackIconPath}</svg>
+  </g>`
     }
 
     // Hierarchical navigation attributes
@@ -733,11 +742,11 @@ export class SVGRenderer {
     // Include bounds data for zoom-based navigation
     const boundsJson = hasSheet
       ? JSON.stringify({
-          x: bounds.x,
-          y: bounds.y,
-          width: bounds.width,
-          height: bounds.height,
-        }).replace(/"/g, '&quot;')
+        x: bounds.x,
+        y: bounds.y,
+        width: bounds.width,
+        height: bounds.height,
+      }).replace(/"/g, '&quot;')
       : ''
     const sheetAttrs = hasSheet
       ? ` data-has-sheet="true" data-sheet-id="${sg.id}" data-bounds="${boundsJson}"`
@@ -1843,7 +1852,7 @@ ${linePath}
 }
 
 // Namespace-style API
-export interface RenderOptions extends SVGRendererOptions {}
+export interface RenderOptions extends SVGRendererOptions { }
 
 /**
  * Render NetworkGraph to SVG string (sync)

@@ -43,6 +43,8 @@ const deviceTypeToIcon: Record<DeviceType, string> = {
   [DeviceType.Firewall]: 'firewall',
   [DeviceType.LoadBalancer]: 'load-balancer',
   [DeviceType.Server]: 'server',
+  [DeviceType.VM]: 'server',
+  [DeviceType.Container]: 'generic',
   [DeviceType.AccessPoint]: 'access-point',
   [DeviceType.CPE]: 'cpe',
   [DeviceType.Cloud]: 'cloud',
